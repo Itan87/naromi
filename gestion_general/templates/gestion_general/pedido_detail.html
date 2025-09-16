@@ -1,0 +1,19 @@
+<!-- gestion_general/templates/gestion_general/pedido_detail.html -->
+{% extends "gestion_general/base.html" %}
+{% block content %}
+<h2>Pedido #{{ pedido.id }}</h2>
+<p><strong>Cliente:</strong> {{ pedido.cliente }}</p>
+<p><strong>Estado:</strong> {{ pedido.get_estado_display }}</p>
+<p><strong>Fecha:</strong> {{ pedido.fecha|date:"d/m/Y H:i" }}</p>
+
+<h4>Insumos</h4>
+<table class="table">
+  <thead><tr><th>Producto</th><th>Cantidad</th></tr></thead>
+  <tbody>
+    {% for i in pedido.insumos.all %}
+      <tr><td>{{ i.producto.nombre }} ({{ i.producto.sku }})</td><td>{{ i.cantidad }}</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+<a class="btn btn-secondary" href="{% url 'pedido_list' %}">Volver</a>
+{% endblock %}

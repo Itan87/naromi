@@ -1,0 +1,37 @@
+<!-- gestion_general/templates/gestion_general/pedido_form.html -->
+{% extends "gestion_general/base.html" %}
+{% block content %}
+<h2>{% if pedido %}Editar Pedido #{{ pedido.id }}{% else %}Nuevo Pedido{% endif %}</h2>
+
+<form method="post">
+  {% csrf_token %}
+  {{ form.as_p }}
+
+  <h4>Lista de productos disponibles (referencia)</h4>
+  <table class="table table-sm">
+    <thead><tr><th>SKU</th><th>Nombre</th><th>Stock</th></tr></thead>
+    <tbody>
+      {% for prod in productos %}
+        <tr><td>{{ prod.sku }}</td><td>{{ prod.nombre }}</td><td>{{ prod.stock_actual }}</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <h4>Insumos (completá producto y cantidad)</h4>
+  {{ formset.management_form }}
+  <table class="table">
+    <thead><tr><th>Producto</th><th>Cantidad</th></tr></thead>
+    <tbody>
+      {% for sub in formset %}
+        <tr>
+          <td>{{ sub.producto }}</td>
+          <td>{{ sub.cantidad }}</td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <button class="btn btn-primary">Guardar</button>
+  <a class="btn btn-secondary" href="{% url 'pedido_list' %}">Cancelar</a>
+</form>
+{% endblock %}

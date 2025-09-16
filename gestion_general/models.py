@@ -26,7 +26,7 @@ class Producto(models.Model):
     stock_minimo = models.IntegerField(default=5)
     precio_unitario = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
 
-    def str(self):
+    def __str__(self):
         return f"{self.sku} — {self.nombre}"
 
     def es_critico(self):
@@ -43,6 +43,14 @@ class Pedido(models.Model):
         ('completado', 'Completado'),
         ('cancelado', 'Cancelado'),
     ]
+
+    # Campo para clasificar el tipo de pedido
+    TIPOS = [
+        ('cliente', 'Pedido de Cliente'),
+        ('insumo', 'Solicitud de Insumo'),
+    ]
+    tipo_pedido = models.CharField(max_length=10, choices=TIPOS, default='cliente')
+    
     cliente = models.CharField(max_length=200)
     fecha = models.DateTimeField(auto_now_add=True)
     estado = models.CharField(max_length=20, choices=ESTADOS, default='ingresado')
@@ -55,7 +63,7 @@ class Pedido(models.Model):
     )
     total = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
 
-    def str(self):
+    def __str__(self):
         return f"Pedido {self.id} - {self.cliente} ({self.estado})"
 
 
@@ -69,5 +77,5 @@ class PedidoInsumo(models.Model):
     producto = models.ForeignKey(Producto, on_delete=models.PROTECT)
     cantidad = models.PositiveIntegerField()
 
-    def str(self):
+    def __str__(self):
         return f"{self.cantidad} x {self.producto.sku}"

@@ -1,0 +1,13 @@
+{% extends "admin/base_site.html" %}
+
+{% block content %}
+<h2>¿Estás seguro de que deseas eliminar este pedido?</h2>
+<p><strong>Cliente:</strong> {{ object.cliente }}</p>
+<p><strong>Estado:</strong> {{ object.estado }}</p>
+
+<form method="post">
+  {% csrf_token %}
+  <button type="submit" class="btn btn-danger">Sí, eliminar</button>
+  <a href="{% url 'pedido_list' %}" class="btn btn-secondary">Cancelar</a>
+</form>
+{% endblock %}

@@ -1,0 +1,10 @@
+<!-- gestion_general/templates/gestion_general/producto_form.html -->
+{% extends "gestion_general/base.html" %}
+{% block content %}
+<h2>{% if form.instance.pk %}Editar producto{% else %}Nuevo producto{% endif %}</h2>
+<form method="post">{% csrf_token %}
+  {{ form.as_p }}
+  <button class="btn btn-primary">Guardar</button>
+  <a class="btn btn-secondary" href="{% url 'producto_list' %}">Cancelar</a>
+</form>
+{% endblock %}

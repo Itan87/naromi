@@ -1,0 +1,29 @@
+<!-- gestion_general/templates/gestion_general/base.html -->
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>{% block title %}Naromi - Gestor{% endblock %}</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body class="container mt-4">
+  <nav class="mb-3">
+    {% if user.is_authenticated %}
+      Hola <strong>{{ user.username }}</strong> |
+      <a href="{% url 'dashboard' %}">Dashboard</a> |
+      <a href="{% url 'producto_list' %}">Productos</a> |
+      <a href="{% url 'pedido_list' %}">Pedidos</a> |
+      <a href="{% url 'logout' %}">Salir</a>
+    {% else %}
+      <a href="{% url 'login' %}">Ingresar</a>
+    {% endif %}
+  </nav>
+
+  {% for message in messages %}
+    <div class="alert alert-{{ message.tags }}">{{ message }}</div>
+  {% endfor %}
+
+  {% block content %}{% endblock %}
+</body>
+</html>

@@ -1,0 +1,10 @@
+<!-- gestion_general/templates/gestion_general/producto_confirm_delete.html -->
+{% extends "gestion_general/base.html" %}
+{% block content %}
+<h2>Eliminar producto</h2>
+<p>¿Eliminar {{ producto.nombre }} ({{ producto.sku }})?</p>
+<form method="post">{% csrf_token %}
+  <button class="btn btn-danger">Sí, eliminar</button>
+  <a class="btn btn-secondary" href="{% url 'producto_list' %}">Cancelar</a>
+</form>
+{% endblock %}

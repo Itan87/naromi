@@ -1,9 +1,7 @@
-
 from django.contrib import admin
-from django.urls import path
-from gestion_general.views import home
+from django.urls import path, include
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('', home, name='home'),
+    path('', include('gestion_general.urls')),  # <- Esto conecta la app
 ]
