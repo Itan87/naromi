@@ -22,8 +22,8 @@ class Command(BaseCommand):
                     'rol': 'admin',
                     'is_superuser': True,
                     'is_staff': True,
-                    'first_name': 'Administrador',
-                    'last_name': 'del Sistema'
+                    'first_name': 'Maria',
+                    'last_name': 'Serrano (Admin)'
                 }
             )
             if created:
@@ -36,8 +36,8 @@ class Command(BaseCommand):
                     'email': 'encargado@taller.com',
                     'rol': 'emp',
                     'is_staff': True,
-                    'first_name': 'Encargado',
-                    'last_name': 'del Taller'
+                    'first_name': 'Karen',
+                    'last_name': 'Tejedo (Encargada)'
                 }
             )
             if created:
