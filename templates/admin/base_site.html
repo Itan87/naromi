@@ -1,0 +1,20 @@
+{% extends "admin/base.html" %}
+{% load i18n %}
+
+{% block branding %}
+    <h1 id="site-name">
+        <a href="{% url 'admin:index' %}">Naromi Studio</a>
+    </h1>
+{% endblock %}
+
+{% block usertools %}
+    {% if user.is_authenticated %}
+        <div id="user-tools">
+            {% translate 'Bienvenido/a' %}, <strong>{% firstof user.get_short_name user.get_username %}</strong>.
+            <form method="post" action="{% url 'admin:logout' %}" style="display: inline;">
+                {% csrf_token %}
+                <button type="submit" style="background: none; border: none; color: var(--link-fg); text-decoration: underline; cursor: pointer; padding: 0; font: inherit;">{% translate 'salir' %}</button>
+            </form>
+        </div>
+    {% endif %}
+{% endblock %}

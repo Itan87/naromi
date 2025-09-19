@@ -187,6 +187,27 @@ Las configuraciones del panel de administración se encuentran en `gestion_gener
 
 ## Solución de Problemas
 
+## Datos de Prueba
+
+### Cargar Datos de Prueba
+Para cargar datos de prueba en la base de datos, ejecutar:
+```bash
+python manage.py load_mock_data
+```
+
+Este comando creará:
+1. Usuarios de prueba:
+   - Administrador:
+     - Email/Usuario: admin@taller.com
+     - Contraseña: admin123
+     - Rol: Administrador
+   - Encargado:
+     - Email/Usuario: encargado@taller.com
+     - Contraseña: encargado123
+     - Rol: Empleado
+2. 20 productos de ropa
+3. 10 pedidos de ejemplo con estados aleatorios
+
 ### Error de Base de Datos
 ```bash
 # Si hay problemas con migraciones
@@ -205,20 +226,4 @@ pip install -r requirements.txt --force-reinstall
 python manage.py runserver 8001
 ```
 
-## Contribución
 
-Este es un proyecto académico. Para contribuir:
-
-1. Fork el proyecto
-2. Crear una rama para tu feature
-3. Commit tus cambios
-4. Push a la rama
-5. Crear un Pull Request
-
-## Licencia
-
-Este proyecto es para fines académicos.
-
-## Contacto
-
-Para preguntas sobre este proyecto académico, contactar al equipo de desarrollo.
