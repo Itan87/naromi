@@ -1,0 +1,148 @@
+{% extends "admin/base.html" %}
+{% load i18n %}
+
+{% block content %}
+<div class="dashboard">
+    <!-- Header -->
+    <div class="mb-4">
+        <h2>Dashboard</h2>
+        <p class="text-muted">Vista general del sistema</p>
+    </div>
+
+    <!-- Metrics Cards -->
+    <div class="row g-4 mb-4">
+        <!-- Critical Stock -->
+        <div class="col-12 col-md-6 col-lg-3">
+            <div class="card dashboard-card">
+                <div class="card-header d-flex justify-content-between align-items-start">
+                    <h5 class="card-title">Stock Crítico</h5>
+                    <i class="bi bi-exclamation-triangle text-danger"></i>
+                </div>
+                <div class="card-body">
+                    <h2 class="card-value">{{ critical_stock_count }}</h2>
+                    <p class="text-muted mb-0">productos requieren atención</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Active Orders -->
+        <div class="col-12 col-md-6 col-lg-3">
+            <div class="card dashboard-card">
+                <div class="card-header d-flex justify-content-between align-items-start">
+                    <h5 class="card-title">Pedidos Activos</h5>
+                    <i class="bi bi-box text-primary"></i>
+                </div>
+                <div class="card-body">
+                    <h2 class="card-value">{{ active_orders_count }}</h2>
+                    <p class="text-muted mb-0">en proceso</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Total Products -->
+        <div class="col-12 col-md-6 col-lg-3">
+            <div class="card dashboard-card">
+                <div class="card-header d-flex justify-content-between align-items-start">
+                    <h5 class="card-title">Total Productos</h5>
+                    <i class="bi bi-boxes text-success"></i>
+                </div>
+                <div class="card-body">
+                    <h2 class="card-value">{{ total_products }}</h2>
+                    <p class="text-muted mb-0">en inventario</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Monthly Revenue -->
+        <div class="col-12 col-md-6 col-lg-3">
+            <div class="card dashboard-card">
+                <div class="card-header d-flex justify-content-between align-items-start">
+                    <h5 class="card-title">Ingresos del Mes</h5>
+                    <i class="bi bi-graph-up text-success"></i>
+                </div>
+                <div class="card-body">
+                    <h2 class="card-value">${{ monthly_revenue|floatformat:2 }}</h2>
+                    <p class="text-muted mb-0">en pedidos completados</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Detail Cards -->
+    <div class="row g-4">
+        <!-- Critical Stock Products -->
+        <div class="col-12 col-lg-6">
+            <div class="card dashboard-card h-100">
+                <div class="card-header">
+                    <h5 class="card-title">Productos en Stock Crítico</h5>
+                    <p class="card-subtitle text-muted">Requieren atención inmediata</p>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-dashboard">
+                            <thead>
+                                <tr>
+                                    <th>Producto</th>
+                                    <th>Stock Actual</th>
+                                    <th>Mínimo</th>
+                                    <th>Estado</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for product in critical_stock_products %}
+                                <tr>
+                                    <td>{{ product.nombre }}</td>
+                                    <td>{{ product.stock_actual }}</td>
+                                    <td>{{ product.stock_minimo }}</td>
+                                    <td>
+                                        <span class="status-badge status-badge-danger">Crítico</span>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Orders -->
+        <div class="col-12 col-lg-6">
+            <div class="card dashboard-card h-100">
+                <div class="card-header">
+                    <h5 class="card-title">Pedidos Recientes</h5>
+                    <p class="card-subtitle text-muted">Últimos pedidos registrados</p>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-dashboard">
+                            <thead>
+                                <tr>
+                                    <th>Cliente</th>
+                                    <th>Fecha</th>
+                                    <th>Total</th>
+                                    <th>Estado</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for order in recent_orders %}
+                                <tr>
+                                    <td>{{ order.cliente }}</td>
+                                    <td>{{ order.fecha|date:"d/m/Y" }}</td>
+                                    <td>${{ order.total|floatformat:2 }}</td>
+                                    <td>
+                                        <span class="status-badge status-badge-{{ order.estado|lower }}">
+                                            {{ order.get_estado_display }}
+                                        </span>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
