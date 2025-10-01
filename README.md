@@ -160,6 +160,9 @@ python manage.py migrate
 # Crear superusuario
 python manage.py createsuperuser
 
+# Configurar permisos de usuarios
+python manage.py setup_permissions
+
 # Ejecutar tests
 python manage.py test
 
@@ -225,5 +228,3 @@ pip install -r requirements.txt --force-reinstall
 # Usar un puerto diferente
 python manage.py runserver 8001
 ```
-
-
