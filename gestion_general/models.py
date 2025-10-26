@@ -32,7 +32,6 @@ class Insumo(models.Model):
     sku = models.CharField(max_length=50, unique=True)
     nombre = models.CharField(max_length=150)
     descripcion = models.TextField(blank=True)
-    color = models.CharField(max_length=50, blank=True)
     unidad = models.CharField(max_length=20, default='unidad')
     stock_actual = models.IntegerField(default=0)
     stock_minimo = models.IntegerField(default=5)

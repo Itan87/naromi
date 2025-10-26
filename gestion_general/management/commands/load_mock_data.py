@@ -102,25 +102,25 @@ class Command(BaseCommand):
             
             # Create insumos with realistic embroidery supply names
             insumos = []
-            colors = ['Rojo', 'Azul', 'Verde', 'Negro', 'Blanco', 'Amarillo', 'Rosa', 'Morado', 'Naranja', 'Gris']
             
             embroidery_supplies = [
                 'Fiselina 90gr', 'Fiselina 120gr', 'Fiselina 180gr',
-                'Hilo Poliéster', 'Hilo Algodón', 'Hilo Metálico', 'Hilo Rayón',
+                'Hilo Algodón Negro', 'Hilo Algodón Blanco', 'Hilo Algodón Rojo', 'Hilo Algodón Azul', 'Hilo Algodón Verde',
+                'Hilo Poliéster Negro', 'Hilo Poliéster Blanco', 'Hilo Poliéster Rojo', 'Hilo Poliéster Azul', 'Hilo Poliéster Verde',
+                'Hilo Metálico', 'Hilo Rayón',
                 'Lino Natural 180g', 'Lino Natural 200g', 'Lino Blanco',
                 'Tela de Algodón', 'Tela de Poliéster', 'Tela de Lino',
                 'Bobina de Algodón', 'Bobina de Poliéster', 'Bobina Metálica'
             ]
             
-            for i in range(30):  # Increased to match the number of embroidery supplies
-                supply_name = embroidery_supplies[i % len(embroidery_supplies)]
+            # Create one insumo for each unique supply name
+            for i, supply_name in enumerate(embroidery_supplies):
                 sku = f'SKU{str(i+1).zfill(4)}'
                 insumo, created = Insumo.objects.get_or_create(
                     sku=sku,
                     defaults={
                         'nombre': supply_name,
                         'descripcion': f'Insumo profesional para bordado: {supply_name}',
-                        'color': random.choice(colors) if 'Hilo' in supply_name or 'Tela' in supply_name else '',
                         'unidad': 'unidad',
                         'stock_actual': random.randint(0, 100),
                         'stock_minimo': random.randint(5, 15),

@@ -1,0 +1,72 @@
+{% extends "admin/base_site.html" %}
+{% load i18n %}
+
+{% block title %}{{ title }} | {{ site_title|default:_('Django site admin') }}{% endblock %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs">
+<a href="{% url 'admin:index' %}">{% trans 'Home' %}</a>
+&rsaquo; <a href="{% url 'admin:gestion_general_pedido_changelist' %}">{% trans 'Pedidos' %}</a>
+&rsaquo; <a href="{% url 'admin:gestion_general_pedido_change' object.pk %}">{{ object }}</a>
+&rsaquo; {% trans 'Confirmar cambio de estado' %}
+</div>
+{% endblock %}
+
+{% block content %}
+<h1>{{ title }}</h1>
+
+<p>{% blocktrans with object_name=object_name %}¿Está seguro de que desea cambiar el estado del {{ object_name }} "{{ object }}" de <strong>Aprobado</strong> a <strong>Orden de Trabajo</strong>?{% endblocktrans %}</p>
+
+{% if has_critical_items or has_below_minimum %}
+<div class="alert alert-warning">
+    <h3>⚠️ Advertencias de Stock:</h3>
+    {% if has_critical_items %}
+    <p><strong>🔴 CRÍTICO:</strong> Algunos insumos quedarán con stock crítico después de esta operación.</p>
+    {% endif %}
+    {% if has_below_minimum %}
+    <p><strong>🟡 BAJO:</strong> Algunos insumos quedarán por debajo del stock mínimo después de esta operación.</p>
+    {% endif %}
+</div>
+{% endif %}
+
+<h3>Impacto en el Stock:</h3>
+<table class="table">
+    <thead>
+        <tr>
+            <th>Insumo</th>
+            <th>Cantidad Requerida</th>
+            <th>Stock Actual</th>
+            <th>Stock Restante</th>
+            <th>Estado</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for item in stock_impact %}
+        <tr class="{% if item.critical %}table-danger{% elif item.below_minimum %}table-warning{% endif %}">
+            <td>{{ item.insumo_nombre }} ({{ item.insumo_sku }})</td>
+            <td>{{ item.required }}</td>
+            <td>{{ item.current_stock }}</td>
+            <td>{{ item.remaining_stock }}</td>
+            <td>
+                {% if item.critical %}
+                    🔴 CRÍTICO
+                {% elif item.below_minimum %}
+                    🟡 BAJO
+                {% else %}
+                    🟢 NORMAL
+                {% endif %}
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<form method="post">
+    {% csrf_token %}
+    <div class="submit-row">
+        <input type="submit" value="{% trans 'Sí, cambiar estado' %}" class="default" name="confirm_estado_change" value="yes" />
+        <a href="{% url 'admin:gestion_general_pedido_change' object.pk %}" class="button cancel-link">{% trans "No, cancelar" %}</a>
+    </div>
+</form>
+
+{% endblock %}

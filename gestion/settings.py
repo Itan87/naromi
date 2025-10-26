@@ -143,3 +143,21 @@ LOGOUT_REDIRECT_URL = 'login'
 # Session settings
 SESSION_COOKIE_AGE = 86400  # 24 hours in seconds
 SESSION_EXPIRE_AT_BROWSER_CLOSE = True  # Session expires when browser closes
+
+# Logging configuration
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+        },
+    },
+    'loggers': {
+        'gestion_general.admin': {
+            'handlers': ['console'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+    },
+}
