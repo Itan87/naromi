@@ -1,7 +1,7 @@
 from django.core.management.base import BaseCommand
 from django.contrib.auth.models import Permission
 from django.contrib.contenttypes.models import ContentType
-from gestion_general.models import Usuario, Producto, Pedido
+from gestion_general.models import Usuario, Insumo, Pedido
 
 
 class Command(BaseCommand):
@@ -9,11 +9,11 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         # Get content types
-        producto_type = ContentType.objects.get_for_model(Producto)
+        insumo_type = ContentType.objects.get_for_model(Insumo)
         pedido_type = ContentType.objects.get_for_model(Pedido)
 
-        # Get all permissions for Producto and Pedido
-        producto_permissions = Permission.objects.filter(content_type=producto_type)
+        # Get all permissions for Insumo and Pedido
+        insumo_permissions = Permission.objects.filter(content_type=insumo_type)
         pedido_permissions = Permission.objects.filter(content_type=pedido_type)
 
         # Update all empleados
@@ -27,7 +27,7 @@ class Command(BaseCommand):
                 empleado.save(update_fields=['is_staff'])
 
             # Assign permissions
-            for perm in producto_permissions:
+            for perm in insumo_permissions:
                 empleado.user_permissions.add(perm)
             for perm in pedido_permissions:
                 empleado.user_permissions.add(perm)

@@ -1,12 +1,12 @@
 # Sistema de Gestión de Inventario Industrial - Naromi Studio
 
 Práctica Profesional 4 
-Sistema desarrollado en Django que implementa un sistema de gestión de inventario industrial, incluyendo gestión de usuarios, inventario de productos y pedidos.
+Sistema desarrollado en Django que implementa un sistema de gestión de inventario industrial, incluyendo gestión de usuarios, inventario de insumos y pedidos.
 
 ## Características
 
 - **Gestión de Usuarios**: Sistema de autenticación con roles (Administrador y Empleado)
-- **Inventario de Productos**: Control de stock con alertas de stock mínimo
+- **Inventario de Insumos**: Control de stock con alertas de stock mínimo
 - **Gestión de Pedidos**: Seguimiento de pedidos desde ingreso hasta completado
 - **Interfaz Administrativa**: Panel de administración de Django con funcionalidades personalizadas
 - **Formularios con Bootstrap 5**: Interfaz moderna usando django-crispy-forms
@@ -75,8 +75,8 @@ El servidor estará disponible en: `http://127.0.0.1:8000/`
 - Autenticación y autorización
 - Panel de administración personalizado
 
-#### 2. Gestión de Productos
-- Crear y editar productos con SKU único
+#### 2. Gestión de Insumos
+- Crear y editar insumos con SKU único
 - Control de stock actual y mínimo
 - Alertas automáticas cuando el stock está por debajo del mínimo
 - Búsqueda y filtrado por color, talla, etc.
@@ -124,7 +124,7 @@ naromi/
 - Roles: Administrador y Empleado
 - Campos adicionales para gestión de roles
 
-### Producto
+### Insumo
 - SKU único para identificación
 - Información básica (nombre, descripción, color, talla)
 - Control de stock (actual y mínimo)
@@ -137,8 +137,8 @@ naromi/
 - Total del pedido
 
 ### PedidoInsumo
-- Relación entre pedidos y productos
-- Cantidad requerida por producto
+- Relación entre pedidos e insumos
+- Cantidad requerida por insumo
 
 ## Tecnologías Utilizadas
 
@@ -208,7 +208,7 @@ Este comando creará:
      - Email/Usuario: encargado@taller.com
      - Contraseña: encargado123
      - Rol: Empleado
-2. 20 productos de ropa
+2. 30 insumos de bordado (fiselinas, hilos, telas, estabilizadores, agujas, etc.)
 3. 10 pedidos de ejemplo con estados aleatorios
 
 ### Error de Base de Datos

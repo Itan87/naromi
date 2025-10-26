@@ -15,12 +15,24 @@ class Usuario(AbstractUser):
         return f"{self.username} ({self.get_rol_display()})"
 
 
-class Producto(models.Model):
+class Cliente(models.Model):
+    nombre = models.CharField(max_length=200)
+    email = models.EmailField(max_length=254, blank=True)
+    telefono = models.CharField(max_length=20, blank=True)
+
+    def __str__(self):
+        return f"{self.nombre} ({self.email})"
+
+    class Meta:
+        verbose_name = 'Cliente'
+        verbose_name_plural = 'Clientes'
+
+
+class Insumo(models.Model):
     sku = models.CharField(max_length=50, unique=True)
     nombre = models.CharField(max_length=150)
     descripcion = models.TextField(blank=True)
     color = models.CharField(max_length=50, blank=True)
-    talla = models.CharField(max_length=50, blank=True)
     unidad = models.CharField(max_length=20, default='unidad')
     stock_actual = models.IntegerField(default=0)
     stock_minimo = models.IntegerField(default=5)
@@ -40,7 +52,7 @@ class Producto(models.Model):
         return 'normal'
 
     @classmethod
-    def obtener_productos_criticos(cls):
+    def obtener_insumos_criticos(cls):
         return cls.objects.filter(stock_actual__lte=models.F('stock_minimo'))
 
     @classmethod
@@ -63,7 +75,7 @@ class Pedido(models.Model):
         ('completado', 'Completado'),
         ('cancelado', 'Cancelado'),
     ]
-    cliente = models.CharField(max_length=200)
+    cliente = models.ForeignKey(Cliente, on_delete=models.PROTECT)
     fecha = models.DateTimeField(auto_now_add=True)
     estado = models.CharField(max_length=20, choices=ESTADOS, default='ingresado')
     creado_por = models.ForeignKey(
@@ -76,7 +88,7 @@ class Pedido(models.Model):
     total = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
 
     def __str__(self):
-        return f"Pedido {self.id} - {self.cliente} ({self.estado})"
+        return f"Pedido {self.id} - {self.cliente.nombre} ({self.estado})"
 
     @classmethod
     def obtener_pedidos_activos(cls):
@@ -109,8 +121,8 @@ class PedidoInsumo(models.Model):
         on_delete=models.CASCADE,
         related_name='insumos'
     )
-    producto = models.ForeignKey(Producto, on_delete=models.PROTECT)
+    insumo = models.ForeignKey(Insumo, on_delete=models.PROTECT)
     cantidad = models.PositiveIntegerField()
 
     def __str__(self):
-        return f"{self.cantidad} x {self.producto.sku}"
+        return f"{self.cantidad} x {self.insumo.sku}"
