@@ -215,9 +215,9 @@ jobs:
       # 2. Configurar Docker Buildx para builds multi-plataforma (opcional)
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
-        with:
-          # Habilita builds multi-plataforma si necesitas soportar ARM y x86
-          # platforms: linux/amd64,linux/arm64
+        # Habilita builds multi-plataforma si necesitas soportar ARM y x86
+        # with:
+        #   platforms: linux/amd64,linux/arm64
 
       # 3. Configurar metadatos de la imagen Docker
       # Esto incluye tags y labels para la imagen
