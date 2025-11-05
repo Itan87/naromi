@@ -27,7 +27,27 @@ SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-r*1)=gjox_%n%dw^a@sr#
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.environ.get('DEBUG', 'False') == 'True'
 
-ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', '').split(',') if os.environ.get('ALLOWED_HOSTS') else ['localhost', '127.0.0.1']
+# Obtener la URL de Render que se establece automáticamente.
+# Render a menudo establece la variable de entorno WEB_HOST o RENDER_EXTERNAL_HOSTNAME
+# Si Render no la establece, usaremos la URL que configuramos manualmente.
+
+RENDER_HOST = os.environ.get('RENDER_EXTERNAL_HOSTNAME')
+
+# Configuración de ALLOWED_HOSTS
+if RENDER_HOST:
+    # Si estamos en Render, permitimos el host externo de Render (para producción)
+    # y también el host local para pruebas de salud internas.
+    ALLOWED_HOSTS = [RENDER_HOST, '127.0.0.1'] 
+    
+    # Render podría usar un host diferente para los health checks internos
+    # Si ves 400s en los logs de Render, a veces es útil agregar *.onrender.com
+    # Pero intenta la opción de RENDER_HOST primero por seguridad.
+    
+else:
+    # Para desarrollo local con Docker Compose o máquina local
+    ALLOWED_HOSTS = ['localhost', '127.0.0.1', 'db']
+
+# ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', '').split(',') if os.environ.get('ALLOWED_HOSTS') else ['localhost', '127.0.0.1']
 
 
 # Application definition
