@@ -1,0 +1,311 @@
+name: Django CI/CD Pipeline
+
+on:
+  push:
+    branches:
+      - develop
+      - main
+      - feature/*
+    tags:
+      - 'v*'  # Publicar cuando se cree un tag de versión (ej: v1.0.0)
+  pull_request:
+    branches:
+      - develop
+      - main
+
+jobs:
+  test_and_build:
+    runs-on: ubuntu-latest
+    
+    services:
+      # 1. Levantar el servicio de base de datos PostgreSQL para los tests
+      # Esta base de datos se usa exclusivamente para ejecutar las pruebas
+      postgres:
+        image: postgres:14-alpine
+        # Variables de entorno que configuran la base de datos de prueba
+        env:
+          POSTGRES_DB: test_mydjangodb
+          POSTGRES_USER: test_user
+          POSTGRES_PASSWORD: test_password
+        ports:
+          # Mapear el puerto 5432 del contenedor al puerto 5432 del host
+          - 5432:5432
+        # Configuración de health check para asegurar que PostgreSQL esté listo
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      # 2. Obtener el código fuente del repositorio
+      - uses: actions/checkout@v4
+      
+      # 3. Configurar Python 3.11 (versión compatible con el proyecto)
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          # Cachear dependencias para acelerar builds futuros
+          cache: 'pip'
+          
+      # 4. Instalar cliente PostgreSQL para comandos psql
+      # Necesario para el comando de espera de PostgreSQL
+      - name: Install PostgreSQL Client
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client
+
+      # 5. Instalar dependencias del proyecto
+      # Esto incluye Django, pytest, pytest-django y todas las demás dependencias
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      # 6. Esperar que PostgreSQL esté completamente listo antes de continuar
+      # Este paso evita errores de conexión en migraciones y tests
+      - name: Wait for PostgreSQL
+        env:
+          PGHOST: localhost
+          PGPORT: 5432
+          PGDATABASE: test_mydjangodb
+          PGUSER: test_user
+          PGPASSWORD: test_password
+        run: |
+          echo "Esperando que PostgreSQL esté disponible..."
+          until psql -h localhost -U test_user -d test_mydjangodb -c '\q' 2>/dev/null; do
+            echo "PostgreSQL no está disponible aún - esperando..."
+            sleep 1
+          done
+          echo "✅ PostgreSQL está listo y ejecutándose en el puerto 5432"
+
+      # 7. Configurar variables de entorno para Django
+      # Estas variables son necesarias para que Django funcione correctamente en CI
+      - name: Set up Django environment variables
+        run: |
+          # Generar SECRET_KEY usando Python (Django ya está instalado en el paso anterior)
+          SECRET_KEY=$(python -c "from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())")
+          echo "SECRET_KEY=$SECRET_KEY" >> $GITHUB_ENV
+          echo "DEBUG=False" >> $GITHUB_ENV
+          echo "ALLOWED_HOSTS=localhost,127.0.0.1" >> $GITHUB_ENV
+          # Configurar DATABASE_URL para que Django use PostgreSQL en lugar de SQLite
+          echo "DATABASE_URL=postgres://test_user:test_password@localhost:5432/test_mydjangodb" >> $GITHUB_ENV
+        env:
+          # PYTHONPATH necesario para que Django esté disponible
+          PYTHONPATH: ${{ github.workspace }}
+
+      # 8. Ejecutar pruebas con pytest
+      # Pytest ejecutará todos los tests en gestion_general/tests/
+      # Pytest-django maneja automáticamente la creación de la base de datos de pruebas
+      # y las migraciones (a menos que --nomigrations esté activado en pytest.ini)
+      # La base de datos de pruebas se llamará test_<nombre_db> automáticamente
+      - name: Run Tests with Pytest
+        env:
+          # Configurar DATABASE_URL para que pytest-django use PostgreSQL
+          # pytest-django creará automáticamente una base de datos de pruebas (test_*)
+          DATABASE_URL: postgres://test_user:test_password@localhost:5432/test_mydjangodb
+          SECRET_KEY: ${{ env.SECRET_KEY }}
+          DEBUG: False
+          ALLOWED_HOSTS: localhost,127.0.0.1
+        run: |
+          echo "Ejecutando pruebas con pytest..."
+          # Ejecutar pytest con creación de base de datos y migraciones automáticas
+          # El flag --create-db asegura que se cree la base de datos de pruebas si no existe
+          # Sobrescribimos --nomigrations de pytest.ini para permitir migraciones en CI
+          pytest gestion_general/tests/ -v --tb=short --create-db --migrations
+          echo "✅ Todas las pruebas completadas exitosamente"
+
+      # 9. Opcional: Verificar la calidad del código (linter)
+      # Puedes descomentar esto si agregas herramientas como flake8 o black
+      # - name: Run Linter
+      #   run: |
+      #     pip install flake8
+      #     flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+
+  # Job para desplegar la aplicación en Render
+  # Este job se ejecuta después de que la imagen Docker se construya y publique exitosamente
+  deploy_to_render:
+    # Solo ejecutar en push a rama main o tags de versión (v*)
+    # No se ejecuta en develop ni en pull requests
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v'))
+    needs: build_and_push_docker  # Esperar a que la imagen se publique
+    runs-on: ubuntu-latest
+
+    # Usar un Environment para controlar el despliegue
+    # Puedes crear environments en GitHub para requerir aprobación manual si es necesario
+    environment:
+      name: production  # O 'staging' si quieres diferenciar entornos
+      # Opcional: requerir aprobación manual antes de desplegar
+      # url: https://your-render-app.onrender.com
+
+    steps:
+      # 1. Mostrar información del despliegue usando outputs del job anterior
+      - name: Display deployment info
+        run: |
+          echo "🚀 Iniciando despliegue en Render"
+          echo "Imagen: ${{ needs.build_and_push_docker.outputs.image_tag }}"
+          echo "Tag: ${{ needs.build_and_push_docker.outputs.deploy_tag }}"
+          echo "Branch/Tag: ${{ github.ref }}"
+          echo "Commit: ${{ github.sha }}"
+
+      # 2. Disparar el webhook de Render para iniciar el despliegue
+      # Render detectará automáticamente la nueva imagen en el registry y la desplegará
+      # Nota: Necesitas configurar RENDER_DEPLOY_HOOK_URL en GitHub Secrets
+      - name: Trigger Render Deploy Hook
+        env:
+          RENDER_DEPLOY_HOOK_URL: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
+          IMAGE_TAG: ${{ needs.build_and_push_docker.outputs.image_tag }}
+          DEPLOY_TAG: ${{ needs.build_and_push_docker.outputs.deploy_tag }}
+        run: |
+          if [ -z "$RENDER_DEPLOY_HOOK_URL" ]; then
+            echo "⚠️ RENDER_DEPLOY_HOOK_URL no está configurado en GitHub Secrets"
+            echo "Skipping deployment trigger. Configura el webhook en Render y agrega el secret."
+            exit 0
+          fi
+          
+          echo "Disparando webhook de Render..."
+          echo "URL: $RENDER_DEPLOY_HOOK_URL"
+          echo "Imagen: $IMAGE_TAG"
+          echo "Tag: $DEPLOY_TAG"
+          
+          HTTP_CODE=$(curl -s -o /tmp/response.txt -w "%{http_code}" \
+            -X POST \
+            "$RENDER_DEPLOY_HOOK_URL" \
+            -H "Content-Type: application/json" \
+            -d "{\"commit\": \"${{ github.sha }}\", \"tag\": \"$DEPLOY_TAG\", \"image\": \"$IMAGE_TAG\"}")
+          
+          RESPONSE=$(cat /tmp/response.txt)
+          
+          if [ "$HTTP_CODE" -eq 200 ] || [ "$HTTP_CODE" -eq 202 ]; then
+            echo "✅ Webhook disparado exitosamente (HTTP $HTTP_CODE)"
+            echo "Respuesta: $RESPONSE"
+          else
+            echo "❌ Error al disparar webhook (HTTP $HTTP_CODE)"
+            echo "Respuesta: $RESPONSE"
+            exit 1
+          fi
+
+      # 3. Opcional: Verificar el estado del despliegue
+      # Puedes agregar un paso adicional para verificar que el despliegue fue exitoso
+      # - name: Verify deployment
+      #   run: |
+      #     echo "Esperando que la aplicación esté lista..."
+      #     sleep 30
+      #     # Aquí puedes agregar una verificación HTTP de que la app responda
+      #     # curl -f https://your-app.onrender.com/health || exit 1
+      #     echo "✅ Despliegue verificado exitosamente"
+
+  # Job para construir y publicar imagen Docker
+  # Este job solo se ejecuta después de que los tests pasen exitosamente
+  build_and_push_docker:
+    # Solo ejecutar en push a ramas principales o tags, no en pull requests
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop' || startsWith(github.ref, 'refs/tags/v'))
+    needs: test_and_build  # Esperar a que los tests pasen
+    runs-on: ubuntu-latest
+    # Definir outputs del job para pasar información al job de deploy
+    outputs:
+      image_tag: ${{ steps.set_tag.outputs.image_tag }}
+      deploy_tag: ${{ steps.set_tag.outputs.deploy_tag }}
+
+    steps:
+      # 1. Obtener el código fuente del repositorio
+      - uses: actions/checkout@v4
+
+      # 2. Configurar Docker Buildx para builds multi-plataforma (opcional)
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+        with:
+          # Habilita builds multi-plataforma si necesitas soportar ARM y x86
+          # platforms: linux/amd64,linux/arm64
+
+      # 3. Configurar metadatos de la imagen Docker
+      # Esto incluye tags y labels para la imagen
+      - name: Prepare Docker metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          # Imagen para GitHub Container Registry (recomendado, gratis)
+          images: |
+            ghcr.io/${{ github.repository }}/naromi
+            # Descomenta la siguiente línea si quieres usar Docker Hub también
+            # docker.io/${{ secrets.DOCKER_USERNAME }}/naromi
+          # Tags automáticos basados en la rama o tag de Git
+          tags: |
+            type=ref,event=branch  # Tag con nombre de rama (main, develop)
+            type=ref,event=pr     # Tag para pull requests (no usado aquí)
+            type=semver,pattern={{version}}  # Tag semántico (v1.0.0)
+            type=semver,pattern={{major}}.{{minor}}  # Tag mayor.minor (v1.0)
+            type=semver,pattern={{major}}  # Tag mayor (v1)
+            type=sha,prefix={{branch}}-,format=short  # Tag con SHA corto
+
+      # 4. Autenticarse en GitHub Container Registry
+      # GHCR es gratis y está integrado con GitHub
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}  # Usuario de GitHub que ejecuta el workflow
+          password: ${{ secrets.GITHUB_TOKEN }}  # Token automático de GitHub Actions
+
+      # 5. Autenticarse en Docker Hub (opcional)
+      # Descomentar este paso para publicar también en Docker Hub
+      # Requiere configurar DOCKER_USERNAME y DOCKER_PASSWORD en GitHub Secrets
+      # - name: Login to Docker Hub
+      #   uses: docker/login-action@v3
+      #   with:
+      #     username: ${{ secrets.DOCKER_USERNAME }}
+      #     password: ${{ secrets.DOCKER_PASSWORD }}
+
+      # 6. Construir la imagen Docker
+      # La imagen se construye usando el Dockerfile en la raíz del proyecto
+      - name: Build Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .  # Contexto del build (directorio actual)
+          file: ./Dockerfile  # Ruta al Dockerfile
+          push: true  # Publicar automáticamente después de construir
+          tags: ${{ steps.meta.outputs.tags }}  # Tags generados en el paso anterior
+          labels: ${{ steps.meta.outputs.labels }}  # Labels para metadatos
+          cache-from: type=gha  # Usar cache de GitHub Actions para builds más rápidos
+          cache-to: type=gha,mode=max  # Guardar cache en GitHub Actions
+
+      # 7. Mostrar información de la imagen publicada
+      - name: Show published image info
+        run: |
+          echo "✅ Imagen Docker publicada exitosamente"
+          echo "Tags publicados:"
+          echo "${{ steps.meta.outputs.tags }}"
+          echo ""
+          echo "Puedes obtener la imagen con:"
+          echo "docker pull ghcr.io/${{ github.repository }}/naromi:main"
+
+      # 8. Guardar el tag principal de la imagen para el job de deploy
+      # Este tag se usará para desplegar en Render usando outputs del job
+      - name: Set deployed image tag
+        id: set_tag
+        run: |
+          # Extraer el tag principal de la rama o el tag semántico
+          if [[ "${{ github.ref }}" == refs/tags/v* ]]; then
+            # Si es un tag semántico (v1.0.0), extraer la versión
+            DEPLOY_TAG=$(echo "${{ github.ref }}" | sed 's/refs\/tags\///')
+            IMAGE_TAG="ghcr.io/${{ github.repository }}/naromi:$DEPLOY_TAG"
+          elif [[ "${{ github.ref }}" == refs/heads/main ]]; then
+            # Si es main, usar el tag 'main'
+            DEPLOY_TAG="main"
+            IMAGE_TAG="ghcr.io/${{ github.repository }}/naromi:main"
+          elif [[ "${{ github.ref }}" == refs/heads/develop ]]; then
+            # Si es develop, usar el tag 'develop'
+            DEPLOY_TAG="develop"
+            IMAGE_TAG="ghcr.io/${{ github.repository }}/naromi:develop"
+          else
+            # Para otras ramas, usar el SHA corto
+            SHORT_SHA="${GITHUB_SHA:0:7}"
+            DEPLOY_TAG="$SHORT_SHA"
+            IMAGE_TAG="ghcr.io/${{ github.repository }}/naromi:$SHORT_SHA"
+          fi
+          
+          # Guardar como outputs del job para usar en el job de deploy
+          echo "deploy_tag=$DEPLOY_TAG" >> $GITHUB_OUTPUT
+          echo "image_tag=$IMAGE_TAG" >> $GITHUB_OUTPUT
+          echo "✅ Tag de imagen configurado: $IMAGE_TAG"
