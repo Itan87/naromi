@@ -33,5 +33,5 @@ RUN python manage.py collectstatic --noinput || true
 # Expose port
 EXPOSE 8000
 
-# Run migrations and start server
-CMD ["sh", "-c", "python manage.py migrate && gunicorn gestion.wsgi:application --bind 0.0.0.0:${PORT:-8000} --workers 3"]
+# Run migrations, load initial data, and start server
+CMD ["sh", "-c", "python manage.py migrate --noinput && python manage.py init_data && gunicorn gestion.wsgi:application --bind 0.0.0.0:${PORT:-8000} --workers 3"]
