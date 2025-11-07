@@ -530,10 +530,17 @@
                             </div>
                         </td>
                         <td>
-                            {% if pedido.total %}
-                            <div class="price-info">${{ pedido.total }}</div>
+                            {% if pedido.total_final %}
+                                <div class="price-info">
+                                    ${{ pedido.total_final }}
+                                    {% if pedido.total_final < pedido.total %}
+                                        <small style="color: #28a745;">(con descuento)</small>
+                                    {% endif %}
+                                </div>
+                            {% elif pedido.total %}
+                                <div class="price-info">${{ pedido.total }}</div>
                             {% else %}
-                            <div class="price-info no-price">Sin precio</div>
+                                <div class="price-info no-price">Sin precio</div>
                             {% endif %}
                         </td>
                         <td>
