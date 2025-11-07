@@ -253,9 +253,13 @@ class PedidoAdmin(admin.ModelAdmin):
     list_per_page = 25
     ordering = ('-fecha',)
     
+     # Nuevo: Añadir total, descuento y total_final a la lista de lectura
+    readonly_fields = ('descuento', 'total_final',)
+    
+    # Modificar fieldsets para mostrar los nuevos campos
     fieldsets = (
         ('Información del Pedido', {
-            'fields': ('cliente', 'estado', 'total')
+            'fields': ('cliente', 'estado', 'total', 'descuento', 'total_final')
         }),
         ('Detalles Adicionales', {
             'fields': ('creado_por',),
@@ -340,6 +344,23 @@ class PedidoAdmin(admin.ModelAdmin):
         return is_valid, insufficient_items, stock_impact
 
     def save_model(self, request, obj, form, change):
+        super().save_model(request, obj, form, change)
+
+    # Refrescar cliente desde BD después de guardar
+        cliente = Cliente.objects.get(pk=obj.cliente_id)
+        MONTO_MINIMO = 500000
+
+        if obj.total >= MONTO_MINIMO:
+            if cliente.tiene_email:
+                messages.success(
+                request,
+                f"✅ Se aplicó correctamente un 10% de descuento al pedido del cliente {cliente.nombre}."
+            )
+            else:
+                messages.warning(
+                request,
+                f"⚠️ El pedido supera los ${MONTO_MINIMO:,.2f}, pero el cliente {cliente.nombre} no tiene email registrado."
+            )    
         """
         Handle saving of Pedido with custom logic for estado changes.
         """

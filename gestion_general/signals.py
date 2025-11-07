@@ -2,7 +2,8 @@ from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.contrib.auth.models import Permission
 from django.contrib.contenttypes.models import ContentType
-from .models import Usuario, Insumo, Pedido
+from .models import Usuario, Insumo, Pedido, Cliente
+from decimal import Decimal
 
 @receiver(post_save, sender=Usuario)
 def setup_user_permissions(sender, instance, created, **kwargs):
