@@ -3,6 +3,7 @@ from django.contrib.auth.admin import UserAdmin
 from django.db.models import Count, Sum, F
 from django.db.models.functions import TruncMonth
 from django.utils import timezone
+from django.utils.html import format_html
 from django import forms
 from django.shortcuts import redirect
 from django.urls import reverse, path
@@ -39,7 +40,7 @@ class PedidoAdminForm(forms.ModelForm):
         
         # Log the estado change attempt
         logger.info(f"PedidoAdminForm: Attempting estado change from '{self.original_estado}' to '{new_estado}' for Pedido {self.instance.pk}")
-        print(f"🔍 FORM DEBUG: Estado change from '{self.original_estado}' to '{new_estado}' for Pedido {self.instance.pk}")
+        print(f"FORM DEBUG: Estado change from '{self.original_estado}' to '{new_estado}' for Pedido {self.instance.pk}")
         
         # Check if we're changing from Aprobado to Orden de Trabajo
         if (self.original_estado == 'aprobado' and 
@@ -253,15 +254,27 @@ class PedidoAdmin(admin.ModelAdmin):
     list_per_page = 25
     ordering = ('-fecha',)
     
+     # Nuevo: Añadir total, descuento, total_final y factura a la lista de lectura
+    readonly_fields = ('descuento', 'total_final', 'factura_link')
+    
+    # Modificar fieldsets para mostrar los nuevos campos
     fieldsets = (
         ('Información del Pedido', {
-            'fields': ('cliente', 'estado', 'total')
+            'fields': ('cliente', 'estado', 'total', 'descuento', 'total_final', 'factura_link')
         }),
         ('Detalles Adicionales', {
             'fields': ('creado_por',),
             'classes': ('collapse',)
         }),
     )
+
+    def factura_link(self, obj):
+        """Botón para generar la factura PDF desde el admin."""
+        if not obj.pk:
+            return ""
+        url = reverse('generar_factura_pdf', args=[obj.pk])
+        return format_html('<a class="button" href="{}" target="_blank">🧾 Imprimir factura</a>', url)
+    factura_link.short_description = 'Factura'
 
     def cliente_nombre(self, obj):
         return obj.cliente.nombre
@@ -340,6 +353,23 @@ class PedidoAdmin(admin.ModelAdmin):
         return is_valid, insufficient_items, stock_impact
 
     def save_model(self, request, obj, form, change):
+        super().save_model(request, obj, form, change)
+
+    # Refrescar cliente desde BD después de guardar
+        cliente = Cliente.objects.get(pk=obj.cliente_id)
+        MONTO_MINIMO = 500000
+
+        if obj.total >= MONTO_MINIMO:
+            if cliente.tiene_email:
+                messages.success(
+                request,
+                f"✅ Se aplicó correctamente un 10% de descuento al pedido del cliente {cliente.nombre}."
+            )
+            else:
+                messages.warning(
+                request,
+                f"⚠️ El pedido supera los ${MONTO_MINIMO:,.2f}, pero el cliente {cliente.nombre} no tiene email registrado."
+            )    
         """
         Handle saving of Pedido with custom logic for estado changes.
         """

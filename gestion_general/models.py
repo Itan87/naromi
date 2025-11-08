@@ -1,3 +1,4 @@
+from decimal import Decimal
 from django.db import models
 from django.contrib.auth.models import AbstractUser
 from django.db.models import Sum, Count
@@ -20,8 +21,24 @@ class Cliente(models.Model):
     email = models.EmailField(max_length=254, blank=True)
     telefono = models.CharField(max_length=20, blank=True)
 
+    # NUEVO CAMPO BOOLEANO
+    #tiene_email = models.BooleanField(
+     #   default=False, 
+      #  editable=False, 
+       # verbose_name='Email Registrado'
+    #)
+    @property
+    def tiene_email(self):
+        return bool(self.email and self.email.strip())    
+
     def __str__(self):
         return f"{self.nombre} ({self.email})"
+
+    def save(self, *args, **kwargs):
+        # La lógica se ejecuta ANTES de guardar el cliente.
+        # Usa .strip() para limpiar espacios invisibles
+        self.tiene_email = bool(self.email and self.email.strip())
+        super().save(*args, **kwargs)
 
     class Meta:
         verbose_name = 'Cliente'
@@ -85,7 +102,45 @@ class Pedido(models.Model):
         related_name='pedidos_creados'
     )
     total = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
+    
+    descuento = models.DecimalField(
+        max_digits=12, 
+        decimal_places=2, 
+        default=0.00, 
+        verbose_name='Monto Descuento',
+        blank=True
+    )
+    total_final = models.DecimalField(
+        max_digits=12, 
+        decimal_places=2, 
+        default=0.00, 
+        verbose_name='Total Final',
+        blank=True
+    )
 
+    def save(self, *args, **kwargs):
+        MONTO_MINIMO = Decimal('500000.00')
+        PORCENTAJE_DESCUENTO = Decimal('0.10')
+
+          # Si no hay cliente aún, guardamos sin descuento
+        if not self.cliente_id:
+            super().save(*args, **kwargs)
+            return
+
+    # Refrescamos cliente desde BD
+        cliente = Cliente.objects.get(pk=self.cliente_id)
+        tiene_email = cliente.tiene_email
+
+    # Calcular descuento
+        if self.total and self.total >= MONTO_MINIMO and tiene_email:
+            self.descuento = self.total * PORCENTAJE_DESCUENTO
+            self.total_final = self.total - self.descuento
+        else:
+            self.descuento = 0
+            self.total_final = self.total or 0
+
+        super().save(*args, **kwargs)
+           
     def __str__(self):
         return f"Pedido {self.id} - {self.cliente.nombre} ({self.estado})"
 
