@@ -36,8 +36,9 @@ class Cliente(models.Model):
 
     def save(self, *args, **kwargs):
         # La lógica se ejecuta ANTES de guardar el cliente.
-        # Usa .strip() para limpiar espacios invisibles
-        self.tiene_email = bool(self.email and self.email.strip())
+        # Limpiar espacios invisibles del email si existe
+        if self.email:
+            self.email = self.email.strip()
         super().save(*args, **kwargs)
 
     class Meta:
