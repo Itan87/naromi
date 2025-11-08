@@ -1,7 +1,7 @@
 from django.core.management.base import BaseCommand
 from django.contrib.auth.models import Permission
 from django.contrib.contenttypes.models import ContentType
-from gestion_general.models import Usuario, Insumo, Pedido
+from gestion_general.models import Usuario, Insumo, Pedido, Cliente
 
 
 class Command(BaseCommand):
@@ -11,10 +11,12 @@ class Command(BaseCommand):
         # Get content types
         insumo_type = ContentType.objects.get_for_model(Insumo)
         pedido_type = ContentType.objects.get_for_model(Pedido)
+        cliente_type = ContentType.objects.get_for_model(Cliente)
 
-        # Get all permissions for Insumo and Pedido
+        # Get all permissions for Insumo, Pedido, and Cliente
         insumo_permissions = Permission.objects.filter(content_type=insumo_type)
         pedido_permissions = Permission.objects.filter(content_type=pedido_type)
+        cliente_permissions = Permission.objects.filter(content_type=cliente_type)
 
         # Update all empleados
         empleados = Usuario.objects.filter(rol='emp')
@@ -30,6 +32,8 @@ class Command(BaseCommand):
             for perm in insumo_permissions:
                 empleado.user_permissions.add(perm)
             for perm in pedido_permissions:
+                empleado.user_permissions.add(perm)
+            for perm in cliente_permissions:
                 empleado.user_permissions.add(perm)
 
         # Update all admins

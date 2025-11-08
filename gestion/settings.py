@@ -11,6 +11,8 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
 from pathlib import Path
+import os
+import dj_database_url
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -20,12 +22,32 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-r*1)=gjox_%n%dw^a@sr#^**p(^coqpy6s1fekws7d89h_)_(v'
+SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-r*1)=gjox_%n%dw^a@sr#^**p(^coqpy6s1fekws7d89h_)_(v')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.environ.get('DEBUG', 'False') == 'True'
 
-ALLOWED_HOSTS = []
+# Obtener la URL de Render que se establece automáticamente.
+# Render a menudo establece la variable de entorno WEB_HOST o RENDER_EXTERNAL_HOSTNAME
+# Si Render no la establece, usaremos la URL que configuramos manualmente.
+
+RENDER_HOST = os.environ.get('RENDER_EXTERNAL_HOSTNAME')
+
+# Configuración de ALLOWED_HOSTS
+if RENDER_HOST:
+    # Si estamos en Render, permitimos el host externo de Render (para producción)
+    # y también el host local para pruebas de salud internas.
+    ALLOWED_HOSTS = [RENDER_HOST, '127.0.0.1'] 
+    
+    # Render podría usar un host diferente para los health checks internos
+    # Si ves 400s en los logs de Render, a veces es útil agregar *.onrender.com
+    # Pero intenta la opción de RENDER_HOST primero por seguridad.
+    
+else:
+    # Para desarrollo local con Docker Compose o máquina local
+    ALLOWED_HOSTS = ['localhost', '127.0.0.1', 'db']
+
+# ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', '').split(',') if os.environ.get('ALLOWED_HOSTS') else ['localhost', '127.0.0.1']
 
 
 # Application definition
@@ -81,12 +103,21 @@ WSGI_APPLICATION = 'gestion.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+DATABASE_URL = os.environ.get('DATABASE_URL')
+
+if DATABASE_URL:
+    # Production: Use PostgreSQL from DATABASE_URL (Render)
+    DATABASES = {
+        'default': dj_database_url.parse(DATABASE_URL, conn_max_age=600)
     }
-}
+else:
+    # Development: Use SQLite
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
+        }
+    }
 
 
 # Password validation
