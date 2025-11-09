@@ -1,0 +1,594 @@
+{% extends "admin/base.html" %}
+{% load static %}
+
+{% block title %}Gestión de Usuarios | {{ site_title|default:_('Django site admin') }}{% endblock %}
+
+{% block extrastyle %}
+<style>
+    /* Usuario Management Styles */
+    .usuario-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 2rem 0;
+        margin: -1.5rem -1.5rem 2rem -1.5rem;
+        border-radius: 0 0 1rem 1rem;
+    }
+
+    .usuario-header h1 {
+        margin: 0;
+        font-size: 2rem;
+        font-weight: 600;
+    }
+
+    .usuario-header p {
+        margin: 0.5rem 0 0 0;
+        opacity: 0.9;
+        font-size: 1.1rem;
+    }
+
+    .usuario-stats {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1rem;
+        margin-bottom: 2rem;
+    }
+
+    .stat-card {
+        background: white;
+        border-radius: 0.75rem;
+        padding: 1.5rem;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        border: 1px solid #e9ecef;
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .stat-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+    }
+
+    .stat-card .stat-icon {
+        width: 3rem;
+        height: 3rem;
+        border-radius: 0.75rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 1rem;
+        font-size: 1.25rem;
+    }
+
+    .stat-card .stat-icon.primary {
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        color: white;
+    }
+
+    .stat-card .stat-icon.success {
+        background: linear-gradient(135deg, #56ab2f, #a8e6cf);
+        color: white;
+    }
+
+    .stat-card .stat-icon.warning {
+        background: linear-gradient(135deg, #f093fb, #f5576c);
+        color: white;
+    }
+
+    .stat-card .stat-icon.info {
+        background: linear-gradient(135deg, #4facfe, #00f2fe);
+        color: white;
+    }
+
+    .stat-card .stat-value {
+        font-size: 2rem;
+        font-weight: 700;
+        color: #2c3e50;
+        margin: 0;
+    }
+
+    .stat-card .stat-label {
+        color: #6c757d;
+        font-size: 0.875rem;
+        margin: 0.25rem 0 0 0;
+    }
+
+    .usuario-actions {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1.5rem;
+        flex-wrap: wrap;
+        gap: 1rem;
+    }
+
+    .search-box {
+        position: relative;
+        max-width: 300px;
+    }
+
+    .search-box input {
+        padding-left: 2.5rem;
+        border-radius: 0.5rem;
+        border: 1px solid #dee2e6;
+        transition: all 0.2s ease;
+    }
+
+    .search-box input:focus {
+        border-color: #667eea;
+        box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+    }
+
+    .search-box .search-icon {
+        position: absolute;
+        left: 0.75rem;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #6c757d;
+    }
+
+    .btn-add-usuario {
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        border: none;
+        border-radius: 0.5rem;
+        padding: 0.75rem 1.5rem;
+        color: white;
+        font-weight: 500;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        transition: all 0.2s ease;
+    }
+
+    .btn-add-usuario:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        color: white;
+    }
+
+    .usuario-table-container {
+        background: white;
+        border-radius: 0.75rem;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        border: 1px solid #e9ecef;
+        overflow: hidden;
+    }
+
+    .usuario-table-header {
+        padding: 1.5rem;
+        border-bottom: 1px solid #e9ecef;
+        background: #f8f9fa;
+    }
+
+    .usuario-table-header h3 {
+        margin: 0;
+        color: #2c3e50;
+        font-size: 1.25rem;
+        font-weight: 600;
+    }
+
+    .usuario-table-header p {
+        margin: 0.25rem 0 0 0;
+        color: #6c757d;
+        font-size: 0.875rem;
+    }
+
+    .usuario-table {
+        margin: 0;
+        border: none;
+    }
+
+    .usuario-table thead th {
+        background: #f8f9fa;
+        border: none;
+        padding: 1rem 1.5rem;
+        font-weight: 600;
+        color: #495057;
+        font-size: 0.875rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .usuario-table tbody td {
+        padding: 1rem 1.5rem;
+        border: none;
+        border-bottom: 1px solid #f1f3f4;
+        vertical-align: middle;
+    }
+
+    .usuario-table tbody tr:hover {
+        background: #f8f9fa;
+    }
+
+    .usuario-info {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .usuario-name {
+        font-weight: 600;
+        color: #2c3e50;
+        margin: 0;
+    }
+
+    .usuario-email {
+        color: #6c757d;
+        font-size: 0.875rem;
+        margin: 0.25rem 0 0 0;
+    }
+
+    .role-badge {
+        padding: 0.375rem 0.75rem;
+        border-radius: 0.375rem;
+        font-weight: 500;
+        font-size: 0.875rem;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.25rem;
+    }
+
+    .role-badge.admin {
+        background: #d1e7dd;
+        color: #0f5132;
+    }
+
+    .role-badge.emp {
+        background: #e2e3e5;
+        color: #495057;
+    }
+
+    .status-badge {
+        padding: 0.375rem 0.75rem;
+        border-radius: 0.375rem;
+        font-weight: 500;
+        font-size: 0.875rem;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.25rem;
+    }
+
+    .status-badge.active {
+        background: #d1e7dd;
+        color: #0f5132;
+    }
+
+    .status-badge.inactive {
+        background: #f8d7da;
+        color: #842029;
+    }
+
+    .status-badge.staff {
+        background: #cff4fc;
+        color: #055160;
+    }
+
+    .last-login {
+        font-size: 0.875rem;
+        color: #6c757d;
+    }
+
+    .action-buttons {
+        display: flex;
+        gap: 0.5rem;
+    }
+
+    .btn-action {
+        padding: 0.5rem;
+        border-radius: 0.375rem;
+        border: 1px solid #dee2e6;
+        background: white;
+        color: #6c757d;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.2s ease;
+        width: 2.5rem;
+        height: 2.5rem;
+    }
+
+    .btn-action:hover {
+        background: #f8f9fa;
+        color: #495057;
+        transform: translateY(-1px);
+    }
+
+    .btn-action.edit:hover {
+        background: #e3f2fd;
+        color: #1976d2;
+        border-color: #bbdefb;
+    }
+
+    .btn-action.delete:hover {
+        background: #ffebee;
+        color: #d32f2f;
+        border-color: #ffcdd2;
+    }
+
+    .btn-action.password:hover {
+        background: #fff3e0;
+        color: #f57c00;
+        border-color: #ffe0b2;
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 3rem;
+        color: #6c757d;
+    }
+
+    .empty-state i {
+        font-size: 3rem;
+        margin-bottom: 1rem;
+        opacity: 0.5;
+    }
+
+    .empty-state h4 {
+        margin: 0 0 0.5rem 0;
+        color: #495057;
+    }
+
+    .empty-state p {
+        margin: 0;
+        font-size: 0.875rem;
+    }
+
+    @media (max-width: 768px) {
+        .usuario-header {
+            margin: -1rem -1rem 1.5rem -1rem;
+            padding: 1.5rem 0;
+        }
+
+        .usuario-header h1 {
+            font-size: 1.5rem;
+        }
+
+        .usuario-stats {
+            grid-template-columns: 1fr;
+        }
+
+        .usuario-actions {
+            flex-direction: column;
+            align-items: stretch;
+        }
+
+        .search-box {
+            max-width: none;
+        }
+
+        .usuario-table-container {
+            overflow-x: auto;
+        }
+
+        .usuario-table {
+            min-width: 700px;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="usuario-header">
+    <div class="container-fluid">
+        <h1><i class="bi bi-people me-2"></i>Gestión de Usuarios</h1>
+        <p>Administra los usuarios del sistema</p>
+    </div>
+</div>
+
+<div class="container-fluid">
+    <!-- Statistics Cards -->
+    <div class="usuario-stats">
+        <div class="stat-card">
+            <div class="stat-icon primary">
+                <i class="bi bi-people"></i>
+            </div>
+            <h3 class="stat-value">{{ cl.result_count|default:"0" }}</h3>
+            <p class="stat-label">Total Usuarios</p>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon success">
+                <i class="bi bi-person-check"></i>
+            </div>
+            <h3 class="stat-value">{{ cl.result_count|default:"0" }}</h3>
+            <p class="stat-label">Usuarios Activos</p>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon warning">
+                <i class="bi bi-shield-check"></i>
+            </div>
+            <h3 class="stat-value">{{ cl.result_count|default:"0" }}</h3>
+            <p class="stat-label">Administradores</p>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon info">
+                <i class="bi bi-person-gear"></i>
+            </div>
+            <h3 class="stat-value">{{ cl.result_count|default:"0" }}</h3>
+            <p class="stat-label">Empleados</p>
+        </div>
+    </div>
+
+    <!-- Actions Bar -->
+    <div class="usuario-actions">
+        <div class="search-box">
+            <i class="bi bi-search search-icon"></i>
+            <input type="text" class="form-control" placeholder="Buscar por nombre de usuario o email..." id="searchInput">
+        </div>
+        <a href="{% url 'admin:gestion_general_usuario_add' %}" class="btn-add-usuario">
+            <i class="bi bi-person-plus"></i>
+            Nuevo Usuario
+        </a>
+    </div>
+
+    <!-- Users Table -->
+    <div class="usuario-table-container">
+        <div class="usuario-table-header">
+            <h3>Lista de Usuarios</h3>
+            <p>{{ cl.result_count|default:"0" }} usuarios registrados en el sistema</p>
+        </div>
+
+        {% if cl.result_list %}
+        <div class="table-responsive">
+            <table class="table usuario-table">
+                <thead>
+                    <tr>
+                        <th>Usuario</th>
+                        <th>Email</th>
+                        <th>Rol</th>
+                        <th>Estado</th>
+                        <th>Último Acceso</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for usuario in cl.result_list %}
+                    <tr>
+                        <td>
+                            <div class="usuario-info">
+                                <h6 class="usuario-name">{{ usuario.username }}</h6>
+                                {% if usuario.first_name or usuario.last_name %}
+                                <p class="usuario-email">{{ usuario.first_name }} {{ usuario.last_name }}</p>
+                                {% endif %}
+                            </div>
+                        </td>
+                        <td>
+                            {% if usuario.email %}
+                            <div class="contact-item">
+                                <i class="bi bi-envelope"></i>
+                                <span>{{ usuario.email }}</span>
+                            </div>
+                            {% else %}
+                            <span class="text-muted">-</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <span class="role-badge {{ usuario.rol }}">
+                                {% if usuario.rol == 'admin' %}
+                                <i class="bi bi-shield-check"></i>
+                                {% else %}
+                                <i class="bi bi-person-gear"></i>
+                                {% endif %}
+                                {{ usuario.get_rol_display }}
+                            </span>
+                        </td>
+                        <td>
+                            <div class="d-flex flex-column gap-1">
+                                {% if usuario.is_active %}
+                                <span class="status-badge active">
+                                    <i class="bi bi-check-circle"></i>
+                                    Activo
+                                </span>
+                                {% else %}
+                                <span class="status-badge inactive">
+                                    <i class="bi bi-x-circle"></i>
+                                    Inactivo
+                                </span>
+                                {% endif %}
+                                {% if usuario.is_staff %}
+                                <span class="status-badge staff">
+                                    <i class="bi bi-person-badge"></i>
+                                    Staff
+                                </span>
+                                {% endif %}
+                            </div>
+                        </td>
+                        <td>
+                            {% if usuario.last_login %}
+                            <div class="last-login">
+                                <i class="bi bi-clock"></i>
+                                {{ usuario.last_login|date:"d/m/Y H:i" }}
+                            </div>
+                            {% else %}
+                            <span class="text-muted">Nunca</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div class="action-buttons">
+                                <a href="{% url 'admin:gestion_general_usuario_change' usuario.pk %}" class="btn-action edit" title="Editar">
+                                    <i class="bi bi-pencil"></i>
+                                </a>
+                                <a href="{% url 'admin:password_change' %}" class="btn-action password" title="Cambiar Contraseña">
+                                    <i class="bi bi-key"></i>
+                                </a>
+                                {% if usuario.pk != user.pk %}
+                                <a href="{% url 'admin:gestion_general_usuario_delete' usuario.pk %}" class="btn-action delete" title="Eliminar">
+                                    <i class="bi bi-trash"></i>
+                                </a>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="empty-state">
+            <i class="bi bi-person-x"></i>
+            <h4>No hay usuarios registrados</h4>
+            <p>Comienza agregando el primer usuario al sistema</p>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Pagination -->
+    {% if cl.paginator and cl.paginator.num_pages > 1 %}
+    <nav aria-label="Paginación de usuarios" class="mt-4">
+        <ul class="pagination justify-content-center">
+            {% if cl.paginator.has_previous %}
+            <li class="page-item">
+                <a class="page-link" href="?page={{ cl.paginator.previous_page_number }}">Anterior</a>
+            </li>
+            {% endif %}
+            
+            {% for page_num in cl.paginator.page_range %}
+            <li class="page-item {% if page_num == cl.paginator.number %}active{% endif %}">
+                <a class="page-link" href="?page={{ page_num }}">{{ page_num }}</a>
+            </li>
+            {% endfor %}
+            
+            {% if cl.paginator.has_next %}
+            <li class="page-item">
+                <a class="page-link" href="?page={{ cl.paginator.next_page_number }}">Siguiente</a>
+            </li>
+            {% endif %}
+        </ul>
+    </nav>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extrajs %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Search functionality
+    const searchInput = document.getElementById('searchInput');
+    const tableRows = document.querySelectorAll('.usuario-table tbody tr');
+    
+    if (searchInput) {
+        searchInput.addEventListener('input', function() {
+            const searchTerm = this.value.toLowerCase();
+            
+            tableRows.forEach(function(row) {
+                const usuarioName = row.querySelector('.usuario-name').textContent.toLowerCase();
+                const usuarioEmail = row.querySelector('.contact-item span') ? 
+                    row.querySelector('.contact-item span').textContent.toLowerCase() : '';
+                
+                if (usuarioName.includes(searchTerm) || 
+                    usuarioEmail.includes(searchTerm)) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+        });
+    }
+    
+    // Add smooth animations
+    const cards = document.querySelectorAll('.stat-card');
+    cards.forEach(function(card, index) {
+        card.style.animationDelay = (index * 0.1) + 's';
+        card.classList.add('animate__animated', 'animate__fadeInUp');
+    });
+});
+</script>
+{% endblock %}

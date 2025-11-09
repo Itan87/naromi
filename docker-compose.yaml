@@ -1,0 +1,30 @@
+version: '3.8'
+
+services:
+  # 1. SERVICIO DE APLICACIÓN DJANGO (web)
+  web:
+    build: . # Construye la imagen desde el Dockerfile en el directorio actual
+    command: python manage.py runserver 0.0.0.0:8000 # El comando para iniciar la app
+    volumes:
+      - .:/app # Monta el código fuente
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env # Puedes usar este archivo para variables sensibles
+    depends_on:
+      - db # Asegura que la DB se inicie antes que la web
+    
+  # 2. SERVICIO DE BASE DE DATOS (db)
+  db:
+    image: postgres:14-alpine # Imagen oficial de PostgreSQL
+    volumes:
+      - postgres_data:/var/lib/postgresql/data/ # Persistencia de datos
+    environment:
+      # Las variables de entorno de la DB deben coincidir con settings.py
+      - POSTGRES_DB=mydjangodb         # 'NAME' en settings.py
+      - POSTGRES_USER=mydjangoapp      # 'USER' en settings.py
+      - POSTGRES_PASSWORD=secretpassword # 'PASSWORD' en settings.py
+
+# Volúmenes para persistir los datos de PostgreSQL
+volumes:
+  postgres_data:

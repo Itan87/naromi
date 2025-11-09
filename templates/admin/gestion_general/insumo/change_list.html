@@ -1,0 +1,686 @@
+{% extends "admin/base.html" %}
+{% load static %}
+
+{% block title %}Gestión de Insumos | {{ site_title|default:_('Django site admin') }}{% endblock %}
+
+{% block extrastyle %}
+<style>
+    /* Insumo Management Styles */
+    .insumo-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 2rem 0;
+        margin: -1.5rem -1.5rem 2rem -1.5rem;
+        border-radius: 0 0 1rem 1rem;
+    }
+
+    .insumo-header h1 {
+        margin: 0;
+        font-size: 2rem;
+        font-weight: 600;
+    }
+
+    .insumo-header p {
+        margin: 0.5rem 0 0 0;
+        opacity: 0.9;
+        font-size: 1.1rem;
+    }
+
+    .insumo-stats {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1rem;
+        margin-bottom: 2rem;
+    }
+
+    .stat-card {
+        background: white;
+        border-radius: 0.75rem;
+        padding: 1.5rem;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        border: 1px solid #e9ecef;
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .stat-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+    }
+
+    .stat-card .stat-icon {
+        width: 3rem;
+        height: 3rem;
+        border-radius: 0.75rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 1rem;
+        font-size: 1.25rem;
+    }
+
+    .stat-card .stat-icon.primary {
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        color: white;
+    }
+
+    .stat-card .stat-icon.success {
+        background: linear-gradient(135deg, #56ab2f, #a8e6cf);
+        color: white;
+    }
+
+    .stat-card .stat-icon.warning {
+        background: linear-gradient(135deg, #f093fb, #f5576c);
+        color: white;
+    }
+
+    .stat-card .stat-icon.danger {
+        background: linear-gradient(135deg, #ff6b6b, #ee5a52);
+        color: white;
+    }
+
+    .stat-card .stat-value {
+        font-size: 2rem;
+        font-weight: 700;
+        color: #2c3e50;
+        margin: 0;
+    }
+
+    .stat-card .stat-label {
+        color: #6c757d;
+        font-size: 0.875rem;
+        margin: 0.25rem 0 0 0;
+    }
+
+    .insumo-actions {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1.5rem;
+        flex-wrap: wrap;
+        gap: 1rem;
+    }
+
+    .search-box {
+        position: relative;
+        max-width: 300px;
+    }
+
+    .search-box input {
+        padding-left: 2.5rem;
+        border-radius: 0.5rem;
+        border: 1px solid #dee2e6;
+        transition: all 0.2s ease;
+    }
+
+    .search-box input:focus {
+        border-color: #667eea;
+        box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+    }
+
+    .search-box .search-icon {
+        position: absolute;
+        left: 0.75rem;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #6c757d;
+    }
+
+    .btn-add-insumo {
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        border: none;
+        border-radius: 0.5rem;
+        padding: 0.75rem 1.5rem;
+        color: white;
+        font-weight: 500;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        transition: all 0.2s ease;
+    }
+
+    .btn-add-insumo:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        color: white;
+    }
+
+    .insumo-table-container {
+        background: white;
+        border-radius: 0.75rem;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        border: 1px solid #e9ecef;
+        overflow: hidden;
+    }
+
+    .insumo-table-header {
+        padding: 1.5rem;
+        border-bottom: 1px solid #e9ecef;
+        background: #f8f9fa;
+    }
+
+    .insumo-table-header h3 {
+        margin: 0;
+        color: #2c3e50;
+        font-size: 1.25rem;
+        font-weight: 600;
+    }
+
+    .insumo-table-header p {
+        margin: 0.25rem 0 0 0;
+        color: #6c757d;
+        font-size: 0.875rem;
+    }
+
+    .insumo-table {
+        margin: 0;
+        border: none;
+    }
+
+    .insumo-table thead th {
+        background: #f8f9fa;
+        border: none;
+        padding: 1rem 1.5rem;
+        font-weight: 600;
+        color: #495057;
+        font-size: 0.875rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .insumo-table tbody td {
+        padding: 1rem 1.5rem;
+        border: none;
+        border-bottom: 1px solid #f1f3f4;
+        vertical-align: middle;
+    }
+
+    .insumo-table tbody tr:hover {
+        background: #f8f9fa;
+    }
+
+    .insumo-info {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .insumo-sku {
+        font-weight: 600;
+        color: #2c3e50;
+        margin: 0;
+        font-family: 'Courier New', monospace;
+        font-size: 0.875rem;
+    }
+
+    .insumo-nombre {
+        color: #495057;
+        font-size: 0.875rem;
+        margin: 0.25rem 0 0 0;
+    }
+
+    .insumo-descripcion {
+        color: #6c757d;
+        font-size: 0.75rem;
+        margin: 0.25rem 0 0 0;
+        max-width: 200px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .stock-info {
+        display: flex;
+        flex-direction: column;
+        gap: 0.25rem;
+    }
+
+    .stock-current {
+        font-weight: 600;
+        font-size: 1.1rem;
+        color: #2c3e50;
+    }
+
+    .stock-minimum {
+        font-size: 0.875rem;
+        color: #6c757d;
+    }
+
+    .stock-progress {
+        width: 100%;
+        height: 0.5rem;
+        background: #e9ecef;
+        border-radius: 0.25rem;
+        overflow: hidden;
+        margin-top: 0.25rem;
+    }
+
+    .stock-progress-bar {
+        height: 100%;
+        border-radius: 0.25rem;
+        transition: width 0.3s ease;
+    }
+
+    .stock-progress-bar.normal {
+        background: linear-gradient(90deg, #56ab2f, #a8e6cf);
+    }
+
+    .stock-progress-bar.low {
+        background: linear-gradient(90deg, #f093fb, #f5576c);
+    }
+
+    .stock-progress-bar.critical {
+        background: linear-gradient(90deg, #ff6b6b, #ee5a52);
+    }
+
+    .stock-progress-bar.bajo {
+        background: linear-gradient(90deg, #ff8c42, #ff6b35);
+    }
+
+    .stock-progress-bar.critico {
+        background: linear-gradient(90deg, #ff6b6b, #ee5a52);
+    }
+
+    .status-badge {
+        padding: 0.375rem 0.75rem;
+        border-radius: 0.375rem;
+        font-weight: 500;
+        font-size: 0.875rem;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.25rem;
+    }
+
+    .status-badge.normal {
+        background: #d1e7dd;
+        color: #0f5132;
+    }
+
+    .status-badge.low {
+        background: #fff3cd;
+        color: #856404;
+    }
+
+    .status-badge.critical {
+        background: #f8d7da;
+        color: #842029;
+    }
+
+    .status-badge.bajo {
+        background: #fff3cd;
+        color: #856404;
+    }
+
+    .status-badge.critico {
+        background: #f8d7da;
+        color: #842029;
+    }
+
+    .price-info {
+        font-weight: 600;
+        color: #2c3e50;
+    }
+
+    .unit-info {
+        font-size: 0.875rem;
+        color: #6c757d;
+    }
+
+    .action-buttons {
+        display: flex;
+        gap: 0.5rem;
+    }
+
+    .btn-action {
+        padding: 0.5rem;
+        border-radius: 0.375rem;
+        border: 1px solid #dee2e6;
+        background: white;
+        color: #6c757d;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.2s ease;
+        width: 2.5rem;
+        height: 2.5rem;
+    }
+
+    .btn-action:hover {
+        background: #f8f9fa;
+        color: #495057;
+        transform: translateY(-1px);
+    }
+
+    .btn-action.edit:hover {
+        background: #e3f2fd;
+        color: #1976d2;
+        border-color: #bbdefb;
+    }
+
+    .btn-action.delete:hover {
+        background: #ffebee;
+        color: #d32f2f;
+        border-color: #ffcdd2;
+    }
+
+    .btn-action.stock:hover {
+        background: #fff3e0;
+        color: #f57c00;
+        border-color: #ffe0b2;
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 3rem;
+        color: #6c757d;
+    }
+
+    .empty-state i {
+        font-size: 3rem;
+        margin-bottom: 1rem;
+        opacity: 0.5;
+    }
+
+    .empty-state h4 {
+        margin: 0 0 0.5rem 0;
+        color: #495057;
+    }
+
+    .empty-state p {
+        margin: 0;
+        font-size: 0.875rem;
+    }
+
+    .alert-critical {
+        background: #f8d7da;
+        border: 1px solid #f5c2c7;
+        color: #842029;
+        padding: 0.75rem 1rem;
+        border-radius: 0.5rem;
+        margin-bottom: 1rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    @media (max-width: 768px) {
+        .insumo-header {
+            margin: -1rem -1rem 1.5rem -1rem;
+            padding: 1.5rem 0;
+        }
+
+        .insumo-header h1 {
+            font-size: 1.5rem;
+        }
+
+        .insumo-stats {
+            grid-template-columns: 1fr;
+        }
+
+        .insumo-actions {
+            flex-direction: column;
+            align-items: stretch;
+        }
+
+        .search-box {
+            max-width: none;
+        }
+
+        .insumo-table-container {
+            overflow-x: auto;
+        }
+
+        .insumo-table {
+            min-width: 800px;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="insumo-header">
+    <div class="container-fluid">
+        <h1><i class="bi bi-box me-2"></i>Gestión de Insumos</h1>
+        <p>Administra el inventario y stock de materiales</p>
+    </div>
+</div>
+
+<div class="container-fluid">
+    <!-- Statistics Cards -->
+    <div class="insumo-stats">
+        <div class="stat-card">
+            <div class="stat-icon primary">
+                <i class="bi bi-box"></i>
+            </div>
+            <h3 class="stat-value">{{ total_insumos|default:"0" }}</h3>
+            <p class="stat-label">Total Insumos</p>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon success">
+                <i class="bi bi-check-circle"></i>
+            </div>
+            <h3 class="stat-value">{{ stock_normal|default:"0" }}</h3>
+            <p class="stat-label">Stock Normal</p>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon warning">
+                <i class="bi bi-exclamation-triangle"></i>
+            </div>
+            <h3 class="stat-value">{{ stock_bajo|default:"0" }}</h3>
+            <p class="stat-label">Stock Bajo</p>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon danger">
+                <i class="bi bi-x-circle"></i>
+            </div>
+            <h3 class="stat-value">{{ stock_critico|default:"0" }}</h3>
+            <p class="stat-label">Stock Crítico</p>
+        </div>
+    </div>
+
+    <!-- Critical Stock Alert -->
+    {% if cl.result_list %}
+        {% for insumo in cl.result_list %}
+            {% if insumo.estado_stock == 'critico' %}
+                {% if forloop.first %}
+                <div class="alert-critical">
+                    <i class="bi bi-exclamation-triangle-fill"></i>
+                    <span>Hay insumos con stock crítico que requieren atención inmediata</span>
+                </div>
+                {% endif %}
+            {% endif %}
+        {% endfor %}
+    {% endif %}
+
+    <!-- Actions Bar -->
+    <div class="insumo-actions">
+        <div class="search-box">
+            <i class="bi bi-search search-icon"></i>
+            <input type="text" class="form-control" placeholder="Buscar por SKU o nombre..." id="searchInput">
+        </div>
+        <a href="{% url 'admin:gestion_general_insumo_add' %}" class="btn-add-insumo">
+            <i class="bi bi-plus-lg"></i>
+            Nuevo Insumo
+        </a>
+    </div>
+
+    <!-- Insumos Table -->
+    <div class="insumo-table-container">
+        <div class="insumo-table-header">
+            <h3>Inventario de Insumos</h3>
+            <p>{{ cl.result_count|default:"0" }} insumos registrados en el sistema</p>
+        </div>
+
+        {% if cl.result_list %}
+        <div class="table-responsive">
+            <table class="table insumo-table">
+                <thead>
+                    <tr>
+                        <th>Insumo</th>
+                        <th>Stock Actual</th>
+                        <th>Stock Mínimo</th>
+                        <th>Estado</th>
+                        <th>Precio</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for insumo in cl.result_list %}
+                    <tr>
+                        <td>
+                            <div class="insumo-info">
+                                <h6 class="insumo-sku">{{ insumo.sku }}</h6>
+                                <p class="insumo-nombre">{{ insumo.nombre }}</p>
+                                {% if insumo.descripcion %}
+                                <p class="insumo-descripcion">{{ insumo.descripcion }}</p>
+                                {% endif %}
+                            </div>
+                        </td>
+                        <td>
+                            <div class="stock-info">
+                                <span class="stock-current">{{ insumo.stock_actual }}</span>
+                                <span class="unit-info">{{ insumo.unidad }}</span>
+                            </div>
+                        </td>
+                        <td>
+                            <div class="stock-info">
+                                <span class="stock-minimum">{{ insumo.stock_minimo }}</span>
+                                <span class="unit-info">{{ insumo.unidad }}</span>
+                            </div>
+                        </td>
+                        <td>
+                            <div class="d-flex flex-column gap-1">
+                                <span class="status-badge {{ insumo.estado_stock }}">
+                                    {% if insumo.estado_stock == 'critico' %}
+                                    <i class="bi bi-x-circle"></i>
+                                    Crítico
+                                    {% elif insumo.estado_stock == 'bajo' %}
+                                    <i class="bi bi-exclamation-triangle"></i>
+                                    Bajo
+                                    {% else %}
+                                    <i class="bi bi-check-circle"></i>
+                                    Normal
+                                    {% endif %}
+                                </span>
+                                <div class="stock-progress">
+                                    <div class="stock-progress-bar {{ insumo.estado_stock }}" 
+                                         data-current="{{ insumo.stock_actual }}" 
+                                         data-minimum="{{ insumo.stock_minimo }}"></div>
+                                </div>
+                            </div>
+                        </td>
+                        <td>
+                            {% if insumo.precio_unitario %}
+                            <div class="price-info">${{ insumo.precio_unitario }}</div>
+                            <div class="unit-info">por {{ insumo.unidad }}</div>
+                            {% else %}
+                            <span class="text-muted">-</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div class="action-buttons">
+                                <a href="{% url 'admin:gestion_general_insumo_change' insumo.pk %}" class="btn-action edit" title="Editar">
+                                    <i class="bi bi-pencil"></i>
+                                </a>
+                                <a href="{% url 'admin:gestion_general_insumo_change' insumo.pk %}" class="btn-action stock" title="Ajustar Stock">
+                                    <i class="bi bi-box-arrow-in-up"></i>
+                                </a>
+                                <a href="{% url 'admin:gestion_general_insumo_delete' insumo.pk %}" class="btn-action delete" title="Eliminar">
+                                    <i class="bi bi-trash"></i>
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="empty-state">
+            <i class="bi bi-box"></i>
+            <h4>No hay insumos registrados</h4>
+            <p>Comienza agregando el primer insumo al inventario</p>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Pagination -->
+    {% if cl.paginator and cl.paginator.num_pages > 1 %}
+    <nav aria-label="Paginación de insumos" class="mt-4">
+        <ul class="pagination justify-content-center">
+            {% if cl.paginator.has_previous %}
+            <li class="page-item">
+                <a class="page-link" href="?page={{ cl.paginator.previous_page_number }}">Anterior</a>
+            </li>
+            {% endif %}
+            
+            {% for page_num in cl.paginator.page_range %}
+            <li class="page-item {% if page_num == cl.paginator.number %}active{% endif %}">
+                <a class="page-link" href="?page={{ page_num }}">{{ page_num }}</a>
+            </li>
+            {% endfor %}
+            
+            {% if cl.paginator.has_next %}
+            <li class="page-item">
+                <a class="page-link" href="?page={{ cl.paginator.next_page_number }}">Siguiente</a>
+            </li>
+            {% endif %}
+        </ul>
+    </nav>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extrajs %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Search functionality
+    const searchInput = document.getElementById('searchInput');
+    const tableRows = document.querySelectorAll('.insumo-table tbody tr');
+    
+    if (searchInput) {
+        searchInput.addEventListener('input', function() {
+            const searchTerm = this.value.toLowerCase();
+            
+            tableRows.forEach(function(row) {
+                const insumoSku = row.querySelector('.insumo-sku').textContent.toLowerCase();
+                const insumoNombre = row.querySelector('.insumo-nombre').textContent.toLowerCase();
+                
+                if (insumoSku.includes(searchTerm) || 
+                    insumoNombre.includes(searchTerm)) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+        });
+    }
+    
+    // Add smooth animations
+    const cards = document.querySelectorAll('.stat-card');
+    cards.forEach(function(card, index) {
+        card.style.animationDelay = (index * 0.1) + 's';
+        card.classList.add('animate__animated', 'animate__fadeInUp');
+    });
+    
+    // Calculate and animate progress bars
+    const progressBars = document.querySelectorAll('.stock-progress-bar');
+    progressBars.forEach(function(bar) {
+        const current = parseInt(bar.dataset.current);
+        const minimum = parseInt(bar.dataset.minimum);
+        
+        // Calculate percentage (cap at 100%)
+        let percentage = 100;
+        if (minimum > 0) {
+            percentage = Math.min(100, (current / minimum) * 100);
+        }
+        
+        // Set initial width to 0 and animate to calculated percentage
+        bar.style.width = '0%';
+        setTimeout(function() {
+            bar.style.width = percentage + '%';
+        }, 500);
+    });
+});
+</script>
+{% endblock %}

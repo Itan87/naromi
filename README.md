@@ -1,12 +1,12 @@
 # Sistema de Gestión de Inventario Industrial - Naromi Studio
 
 Práctica Profesional 4 
-Sistema desarrollado en Django que implementa un sistema de gestión de inventario industrial, incluyendo gestión de usuarios, inventario de productos y pedidos.
+Sistema desarrollado en Django que implementa un sistema de gestión de inventario industrial, incluyendo gestión de usuarios, inventario de insumos y pedidos.
 
 ## Características
 
 - **Gestión de Usuarios**: Sistema de autenticación con roles (Administrador y Empleado)
-- **Inventario de Productos**: Control de stock con alertas de stock mínimo
+- **Inventario de Insumos**: Control de stock con alertas de stock mínimo
 - **Gestión de Pedidos**: Seguimiento de pedidos desde ingreso hasta completado
 - **Interfaz Administrativa**: Panel de administración de Django con funcionalidades personalizadas
 - **Formularios con Bootstrap 5**: Interfaz moderna usando django-crispy-forms
@@ -75,8 +75,8 @@ El servidor estará disponible en: `http://127.0.0.1:8000/`
 - Autenticación y autorización
 - Panel de administración personalizado
 
-#### 2. Gestión de Productos
-- Crear y editar productos con SKU único
+#### 2. Gestión de Insumos
+- Crear y editar insumos con SKU único
 - Control de stock actual y mínimo
 - Alertas automáticas cuando el stock está por debajo del mínimo
 - Búsqueda y filtrado por color, talla, etc.
@@ -124,7 +124,7 @@ naromi/
 - Roles: Administrador y Empleado
 - Campos adicionales para gestión de roles
 
-### Producto
+### Insumo
 - SKU único para identificación
 - Información básica (nombre, descripción, color, talla)
 - Control de stock (actual y mínimo)
@@ -137,8 +137,8 @@ naromi/
 - Total del pedido
 
 ### PedidoInsumo
-- Relación entre pedidos y productos
-- Cantidad requerida por producto
+- Relación entre pedidos e insumos
+- Cantidad requerida por insumo
 
 ## Tecnologías Utilizadas
 
@@ -159,6 +159,9 @@ python manage.py migrate
 
 # Crear superusuario
 python manage.py createsuperuser
+
+# Configurar permisos de usuarios
+python manage.py setup_permissions
 
 # Ejecutar tests
 python manage.py test
@@ -187,6 +190,27 @@ Las configuraciones del panel de administración se encuentran en `gestion_gener
 
 ## Solución de Problemas
 
+## Datos de Prueba
+
+### Cargar Datos de Prueba
+Para cargar datos de prueba en la base de datos, ejecutar:
+```bash
+python manage.py load_mock_data
+```
+
+Este comando creará:
+1. Usuarios de prueba:
+   - Administrador:
+     - Email/Usuario: admin@taller.com
+     - Contraseña: admin123
+     - Rol: Administrador
+   - Encargado:
+     - Email/Usuario: encargado@taller.com
+     - Contraseña: encargado123
+     - Rol: Empleado
+2. 30 insumos de bordado (fiselinas, hilos, telas, estabilizadores, agujas, etc.)
+3. 10 pedidos de ejemplo con estados aleatorios
+
 ### Error de Base de Datos
 ```bash
 # Si hay problemas con migraciones
@@ -204,21 +228,3 @@ pip install -r requirements.txt --force-reinstall
 # Usar un puerto diferente
 python manage.py runserver 8001
 ```
-
-## Contribución
-
-Este es un proyecto académico. Para contribuir:
-
-1. Fork el proyecto
-2. Crear una rama para tu feature
-3. Commit tus cambios
-4. Push a la rama
-5. Crear un Pull Request
-
-## Licencia
-
-Este proyecto es para fines académicos.
-
-## Contacto
-
-Para preguntas sobre este proyecto académico, contactar al equipo de desarrollo.

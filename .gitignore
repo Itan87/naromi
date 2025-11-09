@@ -13,8 +13,17 @@ db.sqlite3
 *.log
 local_settings.py
 
+# Environment variables
+.env
+.env.local
+
 # System files
 .vscode/
 
 # Dependencies
 Pipfile.lock
+
+model/
+notes/
+
+db.sqlite3
