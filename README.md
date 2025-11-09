@@ -228,3 +228,190 @@ pip install -r requirements.txt --force-reinstall
 # Usar un puerto diferente
 python manage.py runserver 8001
 ```
+
+
+## Ejecución con Docker
+
+### Requisitos Previos
+
+- Docker instalado ([Descargar Docker](https://www.docker.com/get-started))
+- Docker Compose instalado (incluido con Docker Desktop)
+
+### Configuración Inicial
+
+1. **Crear archivo de variables de entorno (opcional)**
+
+   Si deseas personalizar la configuración, crea un archivo `.env` en la raíz del proyecto:
+
+   ```env
+   POSTGRES_DB=mydjangodb
+   POSTGRES_USER=mydjangoapp
+   POSTGRES_PASSWORD=secretpassword
+   PORT=8000
+   ```
+
+   **Nota**: Si no creas el archivo `.env`, Docker Compose usará los valores por defecto definidos en `docker-compose.yaml`.
+
+### Ejecutar el Proyecto con Docker
+
+1. **Construir y ejecutar los contenedores**
+
+   ```bash
+   docker-compose up --build
+   ```
+
+   Este comando:
+   - Construye la imagen de Docker para la aplicación Django
+   - Inicia el contenedor de PostgreSQL
+   - Ejecuta las migraciones automáticamente
+   - Inicia el servidor de desarrollo en `http://127.0.0.1:8000/`
+
+2. **Ejecutar en segundo plano (detached mode)**
+
+   ```bash
+   docker-compose up -d --build
+   ```
+
+3. **Crear un superusuario**
+
+   Una vez que los contenedores estén ejecutándose:
+
+   ```bash
+   docker-compose exec web python manage.py createsuperuser
+   ```
+
+4. **Cargar datos de prueba**
+
+   ```bash
+   docker-compose exec web python manage.py load_mock_data
+   ```
+
+### Comandos Útiles de Docker
+
+```bash
+# Ver logs de los contenedores
+docker-compose logs
+
+# Ver logs solo del servicio web
+docker-compose logs web
+
+# Detener los contenedores
+docker-compose down
+
+# Detener y eliminar volúmenes (elimina la base de datos)
+docker-compose down -v
+
+# Ejecutar comandos de Django en el contenedor
+docker-compose exec web python manage.py <comando>
+
+# Acceder al shell del contenedor
+docker-compose exec web bash
+
+# Reconstruir los contenedores después de cambios
+docker-compose up --build
+
+# Ver el estado de los contenedores
+docker-compose ps
+```
+
+### Acceso a la Aplicación
+
+Una vez que los contenedores estén ejecutándose:
+
+- **Aplicación**: `http://127.0.0.1:8000/`
+- **Panel de Administración**: `http://127.0.0.1:8000/admin/`
+
+### Notas Importantes
+
+- La base de datos PostgreSQL se persiste en un volumen de Docker llamado `postgres_data`
+- Los cambios en el código se reflejan automáticamente gracias al volumen montado (modo desarrollo)
+
+## Pipeline DevOps (CI/CD)
+
+El proyecto utiliza un pipeline de Integración y Despliegue Continuo (CI/CD) automatizado que incluye pruebas, construcción de imágenes Docker y despliegue automático.
+
+### Diagrama del Pipeline
+
+```mermaid
+graph LR
+    A[Developer<br/>Push a GitHub] --> B{Evento?}
+    B -->|Push a develop/main| C[GitHub Actions<br/>Workflow Triggered]
+    B -->|Pull Request| D[GitHub Actions<br/>Solo Tests]
+    
+    C --> E[Job 1: test_and_build]
+    E --> F[Levantar PostgreSQL<br/>Service Container]
+    F --> G[Instalar Dependencias]
+    G --> H[Ejecutar Tests<br/>pytest]
+    H --> I{Tests<br/>Exitosos?}
+    
+    I -->|No| J[Pipeline Falla<br/>❌]
+    I -->|Sí| K[Job 2: build_and_push_docker]
+    
+    K --> L[Construir Imagen Docker<br/>Dockerfile]
+    L --> M[Publicar en GHCR<br/>ghcr.io/usuario/repo/naromi]
+    M --> N[Job 3: deploy_to_render]
+    
+    N --> O[Enviar Webhook<br/>RENDER_DEPLOY_HOOK_URL]
+    O --> P[Render Recibe Webhook]
+    P --> Q[Render: Pull Imagen<br/>desde GHCR]
+    Q --> R[Render: Desplegar<br/>Nuevo Contenedor]
+    R --> S[Aplicación Live<br/>✅]
+    
+    D --> T[Ejecutar Tests]
+    T --> U{Tests<br/>Exitosos?}
+    U -->|No| J
+    U -->|Sí| V[Pipeline Completo<br/>Sin Deploy]
+    
+    style A fill:#e1f5ff
+    style S fill:#d4edda
+    style J fill:#f8d7da
+    style M fill:#fff3cd
+    style R fill:#d1ecf1
+```
+
+### Flujo Detallado
+
+1. **Trigger del Pipeline**
+   - Push a ramas `develop`, `main` o `feature/*`
+   - Creación de tags de versión (`v*`)
+   - Pull Requests a `develop` o `main`
+
+2. **Job 1: test_and_build**
+   - Levanta un servicio PostgreSQL para pruebas
+   - Instala dependencias del proyecto
+   - Ejecuta migraciones de base de datos
+   - Ejecuta suite de tests con `pytest`
+   - Si los tests fallan, el pipeline se detiene
+
+3. **Job 2: build_and_push_docker** (solo en push, no en PRs)
+   - Construye la imagen Docker usando el `Dockerfile`
+   - Etiqueta la imagen con el nombre de la rama o tag
+   - Publica la imagen en GitHub Container Registry (GHCR)
+   - Ejemplo: `ghcr.io/usuario/repo/naromi:develop`
+
+4. **Job 3: deploy_to_render** (solo en push a ramas principales)
+   - Envía una solicitud POST al Web Hook de Render
+   - Render detecta la notificación y inicia un nuevo despliegue
+   - Render hace `docker pull` de la imagen más reciente desde GHCR
+   - Render detiene el contenedor anterior e inicia el nuevo
+
+### Componentes del Pipeline
+
+- **GitHub Actions**: Automatización de CI/CD
+- **PostgreSQL Service Container**: Base de datos para tests
+- **pytest**: Framework de testing
+- **Docker**: Containerización de la aplicación
+- **GitHub Container Registry (GHCR)**: Registro de imágenes Docker
+- **Render**: Plataforma de hosting y despliegue
+
+### Configuración Requerida
+
+Para que el pipeline funcione correctamente, se deben configurar los siguientes secretos en GitHub:
+
+- `RENDER_DEPLOY_HOOK_URL`: URL del Web Hook de Render para despliegues automáticos
+
+### Archivos del Pipeline
+
+- `.github/workflows/main.yml`: Definición del workflow de GitHub Actions
+- `Dockerfile`: Configuración para construir la imagen Docker
+- `docker-compose.yaml`: Configuración para desarrollo local con Docker
